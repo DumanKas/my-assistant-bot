@@ -55,3 +55,21 @@ def get_notes(user_id):
     rows = cursor.fetchall()
     conn.close()
     return [{"text":row[2]} for row in rows]
+def init_db():
+    conn = sqlite3.connect('users2.db')
+    cursor = conn.cursor()
+    # Создаем таблицу истории
+    cursor.execute('''CREATE TABLE IF NOT EXISTS history(
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL)
+    ''')
+    # Создаем таблицу заметок
+    cursor.execute('''CREATE TABLE IF NOT EXISTS note(
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    text TEXT NOT NULL)
+    ''')
+    conn.commit()
+    conn.close()
