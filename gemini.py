@@ -1,34 +1,24 @@
-from config import GEMINI_API_KEY
+from config import OPENROUTER_API_KEY
 import httpx
 
-
 async def ask_gemini2(messages: list):
-
-    user_text = messages[-1]['content']
-
     async with httpx.AsyncClient() as client:
         try:
-
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-
-
             response = await client.post(
-                url,
-                headers={"Content-Type": "application/json"},
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json"
+                },
                 json={
-                    "contents": [{"parts": [{"text": user_text}]}]
+                    "model": "inclusionai/ling-2.6-flash-20260421:free",
+                    "messages": messages
                 },
                 timeout=30
             )
             data = response.json()
-
             if "error" in data:
-                print(f"Ошибка Google API: {data['error']['message']}")
-                return "Извини, произошла техническая ошибка на стороне Google."
-
-
-            return data['candidates'][0]['content']['parts'][0]['text']
-
+                return f"Ошибка: {data['error']['message']}"
+            return data["choices"][0]["message"]["content"]
         except Exception as e:
-            print(f"Ошибка запроса: {e}")
-            return "Не удалось связаться с ИИ."
+            return f"Ошибка: {e}"
