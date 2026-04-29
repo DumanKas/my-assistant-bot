@@ -7,7 +7,7 @@ async def ask_gemini2(messages: list):
             response = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY.strip()}",
                     "Content-Type": "application/json"
                 },
                 json={
