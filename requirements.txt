@@ -1,1 +1,3 @@
-worker: python bot.py
+aiogram==3.7.0
+httpx
+python-dotenv
