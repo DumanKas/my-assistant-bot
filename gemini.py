@@ -9,7 +9,7 @@ async def ask_gemini2(messages: list):
     async with httpx.AsyncClient() as client:
         try:
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
 
             response = await client.post(
                 url,
