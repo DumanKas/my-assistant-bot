@@ -11,7 +11,7 @@ async def ask_gemini2(messages: list):
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "inclusionai/ling-2.6-flash-20260421:free",
+                    "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
                     "messages": messages
                 },
                 timeout=30
