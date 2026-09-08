@@ -2,6 +2,7 @@ import asyncio
 import asyncpg
 import os
 import numpy as np
+from pgvector.asyncpg import register_vector
 from sentence_transformers import SentenceTransformer
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -12,10 +13,14 @@ def get_embedding(text: str):
     embedding = model.encode(text)
     return embedding.tolist()
 
-
+async def init_connection(conn):
+    await register_vector(conn)
 async def create_pool():
-    return await asyncpg.create_pool(DATABASE_URL)
-
+    pool = await asyncpg.create_pool(
+    dsn = DATABASE_URL,
+    init = init_connection,
+)
+    return pool
 async def init_db(pool):
     async with pool.acquire() as conn:
         await conn.execute('''CREATE EXTENSION IF NOT EXISTS vector''')
@@ -69,32 +74,34 @@ async def get_notes(pool, user_id: int):
 
 
 
-async def get_similar_messages(pool, user_id, question: str, top_k: int = 3):
+async def get_similar_messages(pool, user_id, question: str, top_k: int = 3, exclude_ids = None):
     question_embedding = await asyncio.to_thread(get_embedding, question)
+    exclude_ids = exclude_ids or []
     async with pool.acquire() as conn:
         rows = await conn.fetch('''
         SELECT * FROM history 
-        WHERE user_id = $1 AND embedding IS NOT NULL
-        ORDER BY embedding <=> $2 
-        LIMIT $3''',
-        user_id, question_embedding, top_k)
+        WHERE user_id = $1 AND embedding IS NOT NULL AND id != ALL($2 :: int[])
+        ORDER BY embedding <=> $3 
+        LIMIT $4''',
+        user_id,exclude_ids, question_embedding, top_k)
         return [{"role": row['role'], "content": row['content']} for row in rows]
 
 
 async def get_recent_messages(pool, user_id, limit=5):
     async with pool.acquire() as conn:
         rows = await conn.fetch('''
-        SELECT * FROM history
+        SELECT id,role,content FROM history
         WHERE user_id = $1
         ORDER BY created_at DESC
         LIMIT $2''', user_id, limit)
 
-        messages = [{"role": row['role'], "content": row['content']} for row in rows]
+        messages = [{"id": row['id'], "role": row['role'], "content": row['content']} for row in rows]
         return list(reversed(messages))
 
 
 async def get_context(pool, user_id: int, question: str, top_k: int = 3, recent_limit: int = 5):
     recent_messages = await get_recent_messages(pool, user_id, limit=recent_limit)
-    similar_messages = await get_similar_messages(pool, user_id, question, top_k=top_k)
+    recent_ids = [m['id'] for m in recent_messages]
+    similar_messages = await get_similar_messages(pool, user_id, question, top_k=top_k,exclude_ids=recent_ids)
     result = recent_messages + similar_messages
     return result
