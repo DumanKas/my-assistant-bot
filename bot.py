@@ -5,6 +5,7 @@ from typing import Callable, Awaitable, Any, Dict
 from handler import router
 from database import init_db, create_pool
 from config import BOT_TOKEN
+from throttling import ThrottlingMiddleware
 class PoolMiddleware(BaseMiddleware):
     def __init__(self, pool):
         self.pool = pool
@@ -17,6 +18,7 @@ async def main():
     await init_db(pool)
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
+    dp.message.middleware(ThrottlingMiddleware(rate_limit=2.0))
     dp.message.middleware(PoolMiddleware(pool))
     dp.include_router(router)
     await dp.start_polling(bot)
