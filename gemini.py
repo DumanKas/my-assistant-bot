@@ -1,8 +1,9 @@
+
 from config import OPENROUTER_API_KEY
 import httpx
 import asyncio
 from sentence_transformers import SentenceTransformer
-async def ask_gemini2(messages: list, max_retries: int = 3,base = 1):
+async def ask_gemini2(messages: list, max_retries: int = 3, base = 1):
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}",
                "Content-Type": "application/json"}
@@ -20,19 +21,26 @@ async def ask_gemini2(messages: list, max_retries: int = 3,base = 1):
                     continue
                 data = response.json()
                 if "error" in data:
-                    return f"Ошибка: {data['error']['message']}"
+                    error_message = data["error"]["message"]
+                    if "ResourceExhausted" in error_message or "rate limit" in error_message.lower():
+                        if attempt == max_retries - 1:
+                            return "Сервис перегружен, попробуйте чуть позже"
+                        wait = base * (2 ** attempt)
+                        await asyncio.sleep(wait)
+                        continue
+                    return f"Ошибка: {error_message}"
                 return data["choices"][0]["message"]["content"]
             except httpx.TimeoutException:
                 if attempt == max_retries - 1:
-                    return f"Не удалось получить ответ, сервер долго не отвечает. Попробуйте позже"
+                    return "Не удалось получить ответ, сервер долго не отвечает. Попробуйте позже"
                 wait = base * (2 ** attempt)
                 await asyncio.sleep(wait)
                 continue
             except httpx.RequestError:
                 if attempt == max_retries - 1:
-                    return f"Сетевые проблемы. Не получается получить ответ от ИИ. Попробуйте позже"
+                    return "Сетевые проблемы. Не получается получить ответ от ИИ. Попробуйте позже"
                 wait = base * (2 ** attempt)
                 await asyncio.sleep(wait)
                 continue
 
-        return "Большое количество попыток, попробуйте позже "
+        return "Большое количество попыток, попробуйте позже"
