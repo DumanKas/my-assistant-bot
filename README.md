@@ -23,7 +23,7 @@ A smart Telegram bot integrated with Large Language Models (LLMs) for intelligen
    `BOT_TOKEN=your_telegram_token`
    `OPENROUTER_API_KEY=your_api_key`
 4. Run the bot:
-   `python main.py`
+   `python bot.py`
 
 ---
 *Developed by [Duman Kasymkul](https://github.com/DumanKas)*
